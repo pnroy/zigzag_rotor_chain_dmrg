@@ -10,23 +10,41 @@ orientational/radial distributions.
 
 ## Requirements
 
-- **Julia** (the version recorded in `Manifest.toml`)
-- **ITensors.jl** (exact version pinned in `Manifest.toml`)
+- **Julia** (the version recorded in `env/Manifest.toml`)
+- **ITensors.jl** (exact version pinned in `env/Manifest.toml`)
 - Standard-library packages `Printf` and `LinearAlgebra`
+
+The pinned environment lives in the `env/` subfolder (`env/Project.toml`,
+`env/Manifest.toml`), while the source modules sit at the repository root. This
+separation is deliberate: it keeps the root directory free of a `Project.toml`
+so Julia can discover the loose sibling modules (`monomer.jl`, `kinetic.jl`, …)
+via `LOAD_PATH`, while `--project=env` still pins the exact ITensors.jl version.
 
 Install the exact dependency set from the pinned environment:
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=env -e 'using Pkg; Pkg.instantiate()'
 ```
 
-> The committed `Project.toml` and `Manifest.toml` fix the ITensors.jl version.
-> Reproducing the published numbers requires this environment, since the ITensor
-> API and performance change across versions.
+> The committed `env/Project.toml` and `env/Manifest.toml` fix the ITensors.jl
+> version. Reproducing the published numbers requires this environment, since
+> the ITensor API and performance change across versions.
 
 ## Repository layout
 
-The code is organized as a set of local modules loaded via `push!(LOAD_PATH, pwd())`:
+```
+zigzag_rotor_chain_dmrg/
+  main.jl, monomer.jl, kinetic.jl, ...   # source modules (repository root)
+  input.txt, c60.txt                     # input files
+  env/
+    Project.toml, Manifest.toml          # pinned Julia environment
+```
+
+The source modules are loaded via `push!(LOAD_PATH, @__DIR__)`, which adds the
+root directory (where all `.jl` files live) to Julia's load path. Because the
+root has no `Project.toml`, Julia treats it as an implicit environment and finds
+the loose sibling modules; the pinned dependencies are activated separately with
+`--project=env`.
 
 | File | Role |
 |---|---|
@@ -91,10 +109,11 @@ The driver reads two files from the working directory:
 
 ## Running a calculation
 
-Place `input.txt` and `c60.txt` in the working directory and run:
+Place `input.txt` and `c60.txt` in the repository root (next to `main.jl`) and
+run from that directory:
 
 ```bash
-julia --project=. main.jl
+julia --project=env main.jl
 ```
 
 Progress is logged to a file named `log`. For a chain that includes
@@ -133,7 +152,7 @@ dipole-moment value, appended across the sweep.
 
 1. Choose the guest species (rotational constant, mass, cage potential) in
    `input.txt`.
-2. For each target chain angle γ, set `angle` and run `julia --project=. main.jl`
+2. For each target chain angle γ, set `angle` and run `julia --project=env main.jl`
    in a dedicated output directory.
 3. For the phase diagram, ensure `Nmu`/`dmu` span the μ_eff range of interest;
    for the ferro/antiferro comparison, run both `interaction nearest` and
