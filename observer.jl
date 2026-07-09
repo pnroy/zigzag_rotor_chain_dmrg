@@ -5,7 +5,7 @@ mutable struct DemoObserver <: AbstractObserver
 	DemoObserver(energy_tol=0.0) = new(energy_tol,1000.0)
 end
 
-function tensorMPS.checkdone!(o::DemoObserver;kwargs...)
+function ITensorMPS.checkdone!(o::DemoObserver;kwargs...)
 	sw = kwargs[:sweep]
 	energy = kwargs[:energy]
 	wf=kwargs[:psi]
