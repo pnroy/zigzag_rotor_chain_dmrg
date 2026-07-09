@@ -1,6 +1,6 @@
 module expectation
 
-using ITensors
+using ITensors,ITensorMPS
 using LinearAlgebra
 
 export vN_entropy,entropy_block,dipole_correlation,dipole_fluctuation,COM_correlation,COM_averages,get_ctheta_dist,get_phi_dist,get_R_dist,binder
