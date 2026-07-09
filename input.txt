@@ -1,0 +1,65 @@
+####################
+##DMRG calculation##
+####################
+#Number of sites#
+Nsites=	10
+Nbond=	500
+Nsweep=	100
+
+#Thresholds#
+e_cutoff=	1e-5
+dmrg_svd=	1e-5
+
+#von-Neumann entropy#
+mbond=	5		
+
+#Dipole moment and cage distance#
+angle=	80	#degree
+R0=	18.897	#a0
+mu0=	0.0	#a.u.
+dmu=	0.01
+Nmu=	58
+
+#Spin isomer#
+isomer=	para
+
+#Number of levels per spin symmetry#
+Nlevel=	10	
+
+#Number of total states#
+Nstates= 1
+
+#Electric field#
+polarization=   no       #X,Y,XY,YZ,Z,no
+Estart= 0.0	#cm-1
+
+#Interaction#
+inter=	next	#next,nearest
+#######################
+##Monomer calculation##
+#######################
+#SPH basis#
+jmax=	9
+
+#Integration grid#
+Ntheta=	23
+Nphi=	23
+
+#Rotational constants#
+B0=	1.335
+
+#Iso. 3D HO basis#
+nmax=	9
+mass=	26.0144	#amu
+omega=	170.36	#cm-1
+
+#Integration grid#
+NR=	23
+Ntheta=	23
+Nphi=	23
+
+#Equilibrium structure#
+rAB=	1.5639	#A
+
+#SVD error#
+err=	1e-5	
