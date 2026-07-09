@@ -7,7 +7,7 @@ using AssociatedLegendrePolynomials
 using ClassicalOrthogonalPolynomials: laguerrel
 using GaussQuadrature: laguerre,legendre 
 using FFTW
-push!(LOAD_PATH,pwd())
+push!(LOAD_PATH, @__DIR__)
 using hf_potential
 using lif_c60
 

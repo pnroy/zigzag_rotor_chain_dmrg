@@ -6,7 +6,7 @@ using WignerSymbols
 using AssociatedLegendrePolynomials
 using ClassicalOrthogonalPolynomials: laguerrel
 using GaussQuadrature: legendre 
-push!(LOAD_PATH,pwd())
+push!(LOAD_PATH, @__DIR__)
 using trans_real_complex
 
 

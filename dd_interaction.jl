@@ -3,7 +3,7 @@ module dd_interaction
 using LinearAlgebra
 using WignerSymbols
 using GaussQuadrature: laguerre,legendre 
-push!(LOAD_PATH,pwd())
+push!(LOAD_PATH, @__DIR__)
 using potential
 using trans_real_complex
 

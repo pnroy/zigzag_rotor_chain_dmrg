@@ -3,7 +3,7 @@ module monomer
 using LinearAlgebra
 using LinearMaps
 using Arpack
-push!(LOAD_PATH,pwd())
+push!(LOAD_PATH, @__DIR__)
 using kinetic
 using potential
 using trans_real_complex

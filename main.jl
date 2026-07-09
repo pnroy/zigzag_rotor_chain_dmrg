@@ -2,7 +2,7 @@ using Printf
 using LinearAlgebra
 #using JLD
 using ITensors
-push!(LOAD_PATH,pwd())
+push!(LOAD_PATH, @__DIR__)
 using monomer
 using dd_interaction
 using create_operators
