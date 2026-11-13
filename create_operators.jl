@@ -7,7 +7,7 @@ module create_operators
 export operators
 
 ###########################################################################################
-function operators(Nspec,Nprod_up,Nprod_down,Nprod_nnn,Nrad,Nangle,Nangle_phi,interaction)
+function operators(Nspec,Nprod_up,Nprod_down,Nprod_nnn,Nprod_n3u,Nprod_n3d,Nprod_n4,Nrad,Nangle,Nangle_phi,interaction)
 
 f=open("operators.jl","w")
 
@@ -280,7 +280,7 @@ for iterm=1:9
                 println(f,string9)
                 println(f)
         end
-        if interaction == "next"
+        if interaction == "next" || interaction == "fourth"
                 #Next-nearest neighbour operators#
                 for lambda=1:Nprod_nnn[iterm]
                         #Write operator on site 1#
@@ -312,6 +312,42 @@ for iterm=1:9
                         println(f,string8)
                         println(f,string9)
                         println(f)
+                end
+        end
+        if interaction == "fourth"
+                #Third- and fourth-neighbour operators: E/F (3rd, upward), G/H (3rd, downward), I/J (4th)#
+                for (nameA,nameB,suffix,Nprod_shell) in (("E","F","n3u",Nprod_n3u),("G","H","n3d",Nprod_n3d),("I","J","n4",Nprod_n4))
+                        for lambda=1:Nprod_shell[iterm]
+                                #Write operator on site 1#
+                                name_V=string("\"",nameA,iterm,"_",lambda,"\" ")
+                                println(f,string1,name_V,string2)
+                                println(f)
+                                println(f,string3)
+                                println(f,string4)
+                                println(f,string5)
+                                println(f,string6,iterm,"_",suffix,"[j,i,",lambda,"]")
+                                println(f,string8)
+                                println(f,string8)
+                                println(f)
+                                println(f,string8)
+                                println(f,string9)
+                                println(f)
+
+                                #Write operator on site 2#
+                                name_V=string("\"",nameB,iterm,"_",lambda,"\" ")
+                                println(f,string1,name_V,string2)
+                                println(f)
+                                println(f,string3)
+                                println(f,string4)
+                                println(f,string5)
+                                println(f,string7,iterm,"_",suffix,"[j,i,",lambda,"]")
+                                println(f,string8)
+                                println(f,string8)
+                                println(f)
+                                println(f,string8)
+                                println(f,string9)
+                                println(f)
+                        end
                 end
         end
 end

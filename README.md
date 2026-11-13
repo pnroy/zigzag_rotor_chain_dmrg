@@ -89,7 +89,7 @@ The driver reads two files from the working directory:
   | `Ntotal` | number of states (ground + excited) to target |
   | `polarization` | field direction: `no`, `X`, `Y`, `Z`, `XY`, `YZ` |
   | `Estart` | field strength (cm⁻¹) |
-  | `interaction` | `nearest` or `next` (NN vs NN+NNN) |
+  | `interaction` | `nearest`, `next` or `fourth` (NN; NN+NNN; NN+NNN+3rd+4th neighbour) |
   | `jmax` | max rotational quantum number |
   | `Nalpha`, `Nm` | Wigner-basis grid sizes |
   | `B0` | rotational constant (cm⁻¹) |
@@ -118,6 +118,24 @@ julia --project=env main.jl
 
 Progress is logged to a file named `log`. For a chain that includes
 next-nearest-neighbor interactions, set `interaction next` and use `Nsites` > 2.
+To include the third and fourth neighbors as well (a convergence test of the
+interaction range), set `interaction fourth`; shells without any pair for the
+given `Nsites` are skipped automatically, so `fourth` reproduces `next` exactly
+for `Nsites` = 3. The extra pair terms are added as separate MPOs (operators
+`E/F`, `G/H` and `I/J` in the generated `operators.jl`) and the MPO is about
+2-3 times larger than for `next`.
+
+A sweep over the dipole moment can be split over several runs: the environment
+variables `MU_FIRST` and `MU_LAST` select a range of indices of the dipole-moment
+grid (default: the whole grid), for example
+
+```bash
+MU_FIRST=37 MU_LAST=39 julia --project=env main.jl
+```
+
+The first dipole moment of a run starts from a random matrix product state; every
+further one starts from the converged state of the previous dipole moment. Each
+part should run in its own working directory, since the output files are appended.
 
 ## Reproduce-the-figures workflow
 

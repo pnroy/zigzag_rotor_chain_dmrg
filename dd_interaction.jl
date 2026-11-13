@@ -340,6 +340,7 @@ log_file=open("log","a")
 println(log_file,"Number of products: ",Nprod)
 println(log_file,"Chosen SV error: ",error)
 println(log_file,"Sum of first Nprod SV: ",e)
+println(log_file,"Leading singular values: ",F.S[1:min(3,Nprod)])
 
 #Determine the Frobenius norm of the difference between truncated SVD and initial potential#
 mprod=zeros(ComplexF64,(Ngrid1,Ngrid2))

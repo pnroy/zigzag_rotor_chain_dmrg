@@ -34,7 +34,7 @@ polarization=   no       #X,Y,XY,YZ,Z,no
 Estart= 0.0	#cm-1
 
 #Interaction#
-inter=	next	#next,nearest
+inter=	next	#nearest,next,fourth
 #######################
 ##Monomer calculation##
 #######################

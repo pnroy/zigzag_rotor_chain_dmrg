@@ -233,6 +233,14 @@ if interaction == "next" && Nsites == 2
         println("Not enough sites for next-nearest interaction!")
         exit()
 end
+if interaction == "fourth" && Nsites == 2
+        println("Not enough sites for fourth-neighbour interaction!")
+        exit()
+end
+if !(interaction in ("nearest","next","fourth"))
+        println("Unknown interaction keyword: ",interaction," (use nearest, next or fourth)")
+        exit()
+end
 
 #Determine total number of monomer states for given number of levels#
 #states_degeneracy = [1,3,3,5,1,3,5,1,5,4,3,3,5,3,4,3,5,3,4,5,4,3,3,5,3,4,1,3,4]	#HF
@@ -298,7 +306,12 @@ close(f)
 #################################################
 ##Calculate Vdd matrix on monomer basis##
 #################################################
-if interaction == "next"
+#Number of product terms of the third- and fourth-neighbour shells (dummy unless inter = fourth)#
+global Nprod_n3u = 1
+global Nprod_n3d = 1
+global Nprod_n4 = 1
+
+if interaction == "next" || interaction == "fourth"
         f=open("log","a")
         println(f,"#Calculate next-nearest neighbour dipole-dipole interaction#")
         println(f)
@@ -344,6 +357,51 @@ if interaction == "next"
         global V9_nnn = VA_nnn[9]
         global W9_nnn = VB_nnn[9]
         global Nprod_nnn[9] = size(V9_nnn,3)
+
+        if interaction == "fourth"
+                #Third-neighbour shell, upward pairs (i odd -> i+3)#
+                f=open("log","a")
+                println(f,"#Calculate third-neighbour (upward) dipole-dipole interaction#")
+                println(f)
+                close(f)
+                R1 = [0.0,0.0,0.0]
+                R2 = R0*[0.0,cos(0.5*angle),3*sin(0.5*angle)]
+                coeff_n3u,VA_n3u,VB_n3u = Vdd(jmax,nmax,NR,Ntheta,Nphi,R0,R1,R2,mu0,nu,mass,Ntrans,Nrot,Umono[:,1:Nstates],svd_err)
+
+                #Third-neighbour shell, downward pairs (i even -> i+3)#
+                f=open("log","a")
+                println(f,"#Calculate third-neighbour (downward) dipole-dipole interaction#")
+                println(f)
+                close(f)
+                R1 = [0.0,0.0,0.0]
+                R2 = R0*[0.0,-cos(0.5*angle),3*sin(0.5*angle)]
+                coeff_n3d,VA_n3d,VB_n3d = Vdd(jmax,nmax,NR,Ntheta,Nphi,R0,R1,R2,mu0,nu,mass,Ntrans,Nrot,Umono[:,1:Nstates],svd_err)
+
+                #Fourth-neighbour shell (i -> i+4)#
+                f=open("log","a")
+                println(f,"#Calculate fourth-neighbour dipole-dipole interaction#")
+                println(f)
+                close(f)
+                R1 = [0.0,0.0,0.0]
+                R2 = 4*R0*[0.0,0.0,sin(0.5*angle)]
+                coeff_n4,VA_n4,VB_n4 = Vdd(jmax,nmax,NR,Ntheta,Nphi,R0,R1,R2,mu0,nu,mass,Ntrans,Nrot,Umono[:,1:Nstates],svd_err)
+
+                global Nprod_n3u = zeros(Int64,9)
+                global Nprod_n3d = zeros(Int64,9)
+                global Nprod_n4 = zeros(Int64,9)
+                for it=1:9
+                        #Same global naming pattern as V*_nnn/W*_nnn, used by the generated operators.jl#
+                        @eval global $(Symbol("V",it,"_n3u")) = VA_n3u[$it]
+                        @eval global $(Symbol("W",it,"_n3u")) = VB_n3u[$it]
+                        @eval global $(Symbol("V",it,"_n3d")) = VA_n3d[$it]
+                        @eval global $(Symbol("W",it,"_n3d")) = VB_n3d[$it]
+                        @eval global $(Symbol("V",it,"_n4")) = VA_n4[$it]
+                        @eval global $(Symbol("W",it,"_n4")) = VB_n4[$it]
+                        Nprod_n3u[it] = size(VA_n3u[it],3)
+                        Nprod_n3d[it] = size(VA_n3d[it],3)
+                        Nprod_n4[it] = size(VA_n4[it],3)
+                end
+        end
 
 elseif interaction == "nearest"
 
@@ -492,7 +550,7 @@ global V9_up = VA_up[9]
 global W9_up = VB_up[9]
 global Nprod_up[9] = size(V9_up,3)
 
-operators(Nstates,Nprod_up,Nprod_down,Nprod_nnn,Nrad,Nangle,Nangle_phi,interaction)
+operators(Nstates,Nprod_up,Nprod_down,Nprod_nnn,Nprod_n3u,Nprod_n3d,Nprod_n4,Nrad,Nangle,Nangle_phi,interaction)
 
 if polarization == "no"
 	Nfield = 1
@@ -505,6 +563,11 @@ for ii=1:Nmu-1
 end
 push!(lst,0.5759)
 dvec = sort(lst)
+#Optional: run only the dipole-moment indices MU_FIRST..MU_LAST of the grid (environment variables; default: all)#
+#Used to split a sweep over several jobs; the grid itself is the same in every part#
+mu_i1 = parse(Int, get(ENV,"MU_FIRST","1")); mu_i2 = parse(Int, get(ENV,"MU_LAST", string(length(dvec))))
+dvec = dvec[mu_i1:mu_i2]; Nmu = length(dvec)
+println("Dipole-moment indices ", mu_i1, "-", mu_i2, " -> ", dvec)
 
 for idip=0:Nmu-1
 let
@@ -641,7 +704,7 @@ let
                 end
         end
 
-        if interaction == "next"
+        if interaction == "next" || interaction == "fourth"
                 #Next-nearest neighbour potential terms#
                 ampoNNN1 = AutoMPO()
                 for i=1:2:Nsites-2
@@ -709,6 +772,52 @@ let
 
 	H1 = MPO(ampo,sites)
 
+	if interaction == "fourth"
+		#Third-neighbour potential terms, upward pairs (i odd -> i+3)#
+		ampo4 = AutoMPO()
+		for i=1:2:Nsites-3
+			for it=1:9
+				C=coeff_n3u[it]*dipole^2
+				for lambda=1:Nprod_n3u[it]
+					ampo4 += C[lambda]*fac1,string("E",it,"_",lambda),i,string("F",it,"_",lambda),i+3
+					ampoTot += C[lambda]*fac1,string("E",it,"_",lambda),i,string("F",it,"_",lambda),i+3
+				end
+			end
+		end
+		#Third-neighbour potential terms, downward pairs (i even -> i+3)#
+		ampo5 = AutoMPO()
+		for i=2:2:Nsites-3
+			for it=1:9
+				C=coeff_n3d[it]*dipole^2
+				for lambda=1:Nprod_n3d[it]
+					ampo5 += C[lambda]*fac1,string("G",it,"_",lambda),i,string("H",it,"_",lambda),i+3
+					ampoTot += C[lambda]*fac1,string("G",it,"_",lambda),i,string("H",it,"_",lambda),i+3
+				end
+			end
+		end
+		#Fourth-neighbour potential terms (i -> i+4)#
+		ampo6 = AutoMPO()
+		for i=1:Nsites-4
+			for it=1:9
+				C=coeff_n4[it]*dipole^2
+				for lambda=1:Nprod_n4[it]
+					ampo6 += C[lambda]*fac1,string("I",it,"_",lambda),i,string("J",it,"_",lambda),i+4
+					ampoTot += C[lambda]*fac1,string("I",it,"_",lambda),i,string("J",it,"_",lambda),i+4
+				end
+			end
+		end
+		#List of MPOs passed to dmrg; shells without any pair for this chain length are left out#
+		Hlist = MPO[H1,H2]
+		if Nsites > 3
+			push!(Hlist,H3)
+			push!(Hlist,MPO(ampo4,sites))
+		end
+		if Nsites > 4
+			push!(Hlist,MPO(ampo5,sites))
+			push!(Hlist,MPO(ampo6,sites))
+		end
+	end
+
 	energies = []
 	
 	#Perform DMRG runs#
@@ -725,7 +834,9 @@ let
 	end
 
 	obs = DemoObserver(e_cutoff)
-        if interaction == "next"
+        if interaction == "fourth"
+			energy,psi = dmrg(Hlist,initial_states[1],sweeps,observer=obs, outputlevel=0)
+        elseif interaction == "next"
                 if Nsites > 3
 			energy,psi = dmrg([H1,H2,H3],initial_states[1],sweeps,observer=obs, outputlevel=0)
         	else
@@ -750,7 +861,7 @@ let
 	global wavefunction = [psi for ii=1:Ntotal]
 
 	if Ntotal > 1
-                if interaction == "next"
+                if interaction == "next" || interaction == "fourth"
                         Htot = MPO(ampoTot,sites)
                 end
 		for istates=1:Ntotal-1
@@ -776,7 +887,7 @@ let
 			println(f1,"Start DMRG run")
 			close(f1)
 			obs = DemoObserver(e_cutoff)
-                        if interaction == "next"
+                        if interaction == "next" || interaction == "fourth"
                                 energy ,psi = dmrg(Htot,wavefunction[1:istates],initial_states[istates+1] ,sweeps, observer=obs, outputlevel=0)
                         elseif interaction == "nearest"
                                 energy ,psi = dmrg(H1,wavefunction[1:istates],initial_states[istates+1] ,sweeps, observer=obs, outputlevel=0)
