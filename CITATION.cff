@@ -11,8 +11,8 @@ abstract: >-
   orientational/radial distributions).
 type: software
 license: MIT
-version: 1.0.0
-date-released: "2026-07-08"
+version: 1.2.1
+date-released: "2026-11-13"
 authors:
   - family-names: Serwatka
     given-names: Tobias
@@ -37,9 +37,9 @@ keywords:
   - endofullerene
   - dipolar rotors
   - confined water
-# Fill in once the release is archived to Zenodo (concept DOI recommended):
-# doi: "10.5281/zenodo.XXXXXXX"
-# repository-code: "https://github.com/<org-or-user>/<repo>"
+# Concept DOI of the Zenodo archive (resolves to the latest archived release):
+doi: "10.5281/zenodo.21271590"
+repository-code: "https://github.com/pnroy/zigzag_rotor_chain_dmrg"
 
 # Uncomment and complete after the paper is published so tools cite the
 # article rather than only the software:

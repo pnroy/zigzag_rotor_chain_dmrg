@@ -61,15 +61,16 @@ the loose sibling modules; the pinned dependencies are activated separately with
 | `dd_interaction.jl` | Dipole-dipole interaction matrices (pair-product decomposition) |
 | `kinetic.jl` | Rotational/translational kinetic energy |
 | `potential.jl`, `hf_potential.jl`, `lif_c60.jl` | Guest-cage potentials (H₂O/HF and LiF@C₆₀) |
-| `create_operators.jl`, `operators.jl` | ITensor site type (`AsymTop`) and operator definitions |
+| `create_operators.jl` | Writes `operators.jl`, the ITensor site type (`AsymTop`) and operator definitions |
 | `expectation.jl` | Expectation values, entropy, Binder parameter |
 | `correlations.jl` | Dipole and COM correlation functions |
 | `distributions.jl` | Radial and orientational (cosθ, φ) distributions |
 | `trans_real_complex.jl` | Real ↔ complex spherical-harmonic transforms |
 | `observer.jl` | DMRG convergence observer |
 
-Note: `operators.jl` is generated/large and is `include`d per dipole step by
-`main.jl`; `observer.jl` is likewise `include`d in the sweep loop.
+Note: `operators.jl` is generated at the start of every run (it is not part of
+the repository) and is `include`d per dipole step by `main.jl`; `observer.jl` is
+likewise `include`d in the sweep loop.
 
 ## Input files
 
