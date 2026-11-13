@@ -10,8 +10,12 @@ orientational/radial distributions.
 
 ## Requirements
 
-- **Julia** (the version recorded in `env/Manifest.toml`)
-- **ITensors.jl** (exact version pinned in `env/Manifest.toml`)
+- **Julia** 1.12 (the version recorded in `env/Manifest.toml`)
+- **ITensors.jl** and **ITensorMPS.jl** (exact versions pinned in `env/Manifest.toml`)
+- The numerical packages imported by the modules (`SpecialFunctions`,
+  `WignerSymbols`, `GaussQuadrature`, `ClassicalOrthogonalPolynomials`,
+  `AssociatedLegendrePolynomials`, `Jacobi`, `FFTW`, `LinearMaps`,
+  `BlockDiagonals`, `Arpack`), all pinned in `env/` as well
 - Standard-library packages `Printf` and `LinearAlgebra`
 
 The pinned environment lives in the `env/` subfolder (`env/Project.toml`,
@@ -26,9 +30,10 @@ Install the exact dependency set from the pinned environment:
 julia --project=env -e 'using Pkg; Pkg.instantiate()'
 ```
 
-> The committed `env/Project.toml` and `env/Manifest.toml` fix the ITensors.jl
-> version. Reproducing the published numbers requires this environment, since
-> the ITensor API and performance change across versions.
+> The committed `env/Project.toml` and `env/Manifest.toml` fix the versions of
+> ITensors.jl and of every other dependency. Reproducing the published numbers
+> requires this environment, since the ITensor API and performance change across
+> versions.
 
 ## Repository layout
 
@@ -36,6 +41,9 @@ julia --project=env -e 'using Pkg; Pkg.instantiate()'
 zigzag_rotor_chain_dmrg/
   main.jl, monomer.jl, kinetic.jl, ...   # source modules (repository root)
   input.txt, c60.txt                     # input files
+  water/                                 # asymmetric-top version (o-D2O, p-H2O), see below
+    main.jl, monomer.jl, h2o_c60.jl, spin.jl, ...
+    input.txt, input_pH2O.txt, c60.txt
   env/
     Project.toml, Manifest.toml          # pinned Julia environment
 ```
@@ -137,6 +145,37 @@ The first dipole moment of a run starts from a random matrix product state; ever
 further one starts from the converged state of the previous dipole moment. Each
 part should run in its own working directory, since the output files are appended.
 
+## Water (asymmetric top) version
+
+The calculations for o-D₂O and p-H₂O use the asymmetric-top version of the code
+in `water/`. It has the same structure, input layout and output files as the
+linear-rotor code at the repository root, with its own modules for the monomer
+basis (`monomer.jl`, `kinetic.jl`, `potential.jl`), the H₂O-C₆₀ cage potential
+(`h2o_c60.jl`) and the nuclear-spin symmetry (`spin.jl`). Run it from inside the
+folder, with the same pinned environment:
+
+```bash
+cd water
+julia --project=../env main.jl
+```
+
+- `input.txt` is the o-D₂O input (rotational constants, mass and frequency of
+  D₂O); `input_pH2O.txt` is the p-H₂O input. Copy the one you need to
+  `input.txt`. Both use `isomer= para`: this keyword selects the rotational
+  states that are para for H₂O and, because of the exchange of two bosons,
+  ortho for D₂O.
+- H₂O and D₂O are told apart by the `mass` entry of `input.txt`, which selects
+  the degeneracies of the monomer levels used to count the states kept
+  (`Nlevel`).
+- The dipole-moment grid consists of `mu0 + k*dmu` for `k = 0 … Nmu-3` plus the
+  screened and the unscreened dipole moment of water (0.2006 and 0.7306 a.u.,
+  i.e. 0.51 D and 1.857 D).
+- `interaction` (`nearest`, `next`, `fourth`) and the `MU_FIRST`/`MU_LAST`
+  option work as described above. There is an additional output file
+  `chi_distribution_*.txt` for the third Euler angle.
+- `water/c60.txt` is the cage geometry in the format read by the water
+  potential; it is not interchangeable with the `c60.txt` at the root.
+
 ## Reproduce-the-figures workflow
 
 Each figure in the manuscript corresponds to a scan over the chain angle γ
@@ -149,9 +188,10 @@ dipole-moment value, appended across the sweep.
 
 - **LiF:** linear rotor; screened dipole μ_eff = 1.46 D. Set the LiF cage
   potential (`lif_c60.jl`) and the LiF rotational constant / mass in `input.txt`.
-- **o-D₂O:** asymmetric top; unscreened dipole μ₀ = 1.86 D (see manuscript for
-  the screening rationale).
-- **p-H₂O:** asymmetric top; used to show the absence of ordering.
+- **o-D₂O:** asymmetric top (`water/`, `input.txt`); unscreened dipole
+  μ₀ = 1.86 D (see manuscript for the screening rationale).
+- **p-H₂O:** asymmetric top (`water/`, `input_pH2O.txt`); used to show the
+  absence of ordering.
 - Cage spacing `R0` = 10 Å throughout.
 
 **Output files → figure quantities**
