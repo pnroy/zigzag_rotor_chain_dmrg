@@ -76,37 +76,37 @@ Note: `operators.jl` is generated/large and is `include`d per dipole step by
 The driver reads two files from the working directory:
 
 - **`input.txt`** — DMRG and system parameters, read positionally by line
-  number. Each parameter sits on its own line as `label value`. The fields, in
-  order, are:
+  number. Each parameter sits on its own line as `label= value`. The entries of
+  the template at the repository root (LiF) are, in order:
 
-  | Parameter | Meaning |
+  | Label in `input.txt` | Meaning |
   |---|---|
   | `Nsites` | number of chain sites |
   | `Nbond` | max bond dimension |
-  | `Nsweep` | number of DMRG sweeps |
+  | `Nsweep` | max number of DMRG sweeps |
   | `e_cutoff` | energy convergence cutoff |
   | `dmrg_svd` | SVD truncation error |
   | `mbond` | bond index used for the entropy cut |
   | `angle` | chain angle γ (degrees) |
-  | `R0` | cage-cage spacing (Å) |
-  | `mu0` | starting dipole moment |
-  | `dmu` | dipole-moment step |
-  | `Nmu` | number of dipole-moment values |
-  | `isomer` | spin isomer (e.g. ortho/para) |
+  | `R0` | cage-cage spacing in bohr (18.897 a₀ = 10 Å) |
+  | `mu0` | first dipole moment of the grid (a.u.) |
+  | `dmu` | dipole-moment step (a.u.) |
+  | `Nmu` | number of dipole-moment values: `mu0 + k*dmu` for `k = 0 … Nmu-2`, plus the screened dipole moment of LiF, 0.5759 a.u. (1.46 D), which `main.jl` appends to the grid |
+  | `isomer` | spin isomer (ortho/para) |
   | `Nlevel` | number of monomer levels |
-  | `Ntotal` | number of states (ground + excited) to target |
+  | `Nstates` | number of states (ground + excited) to target |
   | `polarization` | field direction: `no`, `X`, `Y`, `Z`, `XY`, `YZ` |
   | `Estart` | field strength (cm⁻¹) |
-  | `interaction` | `nearest`, `next` or `fourth` (NN; NN+NNN; NN+NNN+3rd+4th neighbour) |
+  | `inter` | interaction range: `nearest`, `next` or `fourth` (NN; NN+NNN; NN+NNN+3rd+4th neighbour) |
   | `jmax` | max rotational quantum number |
-  | `Nalpha`, `Nm` | Wigner-basis grid sizes |
+  | `Ntheta`, `Nphi` (first pair) | angular grid of the rotational basis |
   | `B0` | rotational constant (cm⁻¹) |
   | `nmax` | max translational quantum number |
   | `mass` | guest mass (u) |
   | `omega` | harmonic frequency of the translational mode (cm⁻¹) |
-  | `NR`, `Ntheta`, `Nphi` | quadrature grid sizes |
-  | `eq_struct` | equilibrium geometry parameter (Å) |
-  | `svd_err` | SVD threshold for the pair-product decomposition |
+  | `NR`, `Ntheta`, `Nphi` | quadrature grid sizes of the translational basis |
+  | `rAB` | bond length of the guest (Å) |
+  | `err` | SVD threshold for the pair-product decomposition |
 
   > `input.txt` is parsed by fixed line numbers in `main.jl`. Keep the line
   > layout identical to the provided template; add or reorder lines only if you
@@ -124,14 +124,18 @@ run from that directory:
 julia --project=env main.jl
 ```
 
+The run must start in the folder that holds the source files: `operators.jl` is
+written to the current directory at the start of every run and is read from the
+folder of the source files, so the two have to be the same. To keep several runs
+apart, copy the code folder (see the workflow below).
+
 Progress is logged to a file named `log`. For a chain that includes
-next-nearest-neighbor interactions, set `interaction next` and use `Nsites` > 2.
-To include the third and fourth neighbors as well (a convergence test of the
-interaction range), set `interaction fourth`; shells without any pair for the
-given `Nsites` are skipped automatically, so `fourth` reproduces `next` exactly
-for `Nsites` = 3. The extra pair terms are added as separate MPOs (operators
-`E/F`, `G/H` and `I/J` in the generated `operators.jl`) and the MPO is about
-2-3 times larger than for `next`.
+next-nearest-neighbor interactions, set `inter= next` and use `Nsites` > 2.
+To include the third and fourth neighbors as well, set `inter= fourth`; shells
+without any pair for the given `Nsites` are skipped automatically, so `fourth`
+reproduces `next` exactly for `Nsites` = 3. The extra pair terms are added as
+separate MPOs (operators `E/F`, `G/H` and `I/J` in the generated `operators.jl`),
+which makes the Hamiltonian larger than for `next`.
 
 A sweep over the dipole moment can be split over several runs: the environment
 variables `MU_FIRST` and `MU_LAST` select a range of indices of the dipole-moment
@@ -148,8 +152,10 @@ part should run in its own working directory, since the output files are appende
 ## Water (asymmetric top) version
 
 The calculations for o-D₂O and p-H₂O use the asymmetric-top version of the code
-in `water/`. It has the same structure, input layout and output files as the
-linear-rotor code at the repository root, with its own modules for the monomer
+in `water/`. It has the same structure and output files as the linear-rotor code
+at the repository root and a similar input layout (`water/input.txt` has
+additional entries for the third Euler angle, the three rotational constants and
+the equilibrium structure), with its own modules for the monomer
 basis (`monomer.jl`, `kinetic.jl`, `potential.jl`), the H₂O-C₆₀ cage potential
 (`h2o_c60.jl`) and the nuclear-spin symmetry (`spin.jl`). Run it from inside the
 folder, with the same pinned environment:
@@ -170,8 +176,8 @@ julia --project=../env main.jl
 - The dipole-moment grid consists of `mu0 + k*dmu` for `k = 0 … Nmu-3` plus the
   screened and the unscreened dipole moment of water (0.2006 and 0.7306 a.u.,
   i.e. 0.51 D and 1.857 D).
-- `interaction` (`nearest`, `next`, `fourth`) and the `MU_FIRST`/`MU_LAST`
-  option work as described above. There is an additional output file
+- `inter` (`nearest`, `next`, `fourth`) and the `MU_FIRST`/`MU_LAST` option
+  work as described above. There is an additional output file
   `chi_distribution_*.txt` for the third Euler angle.
 - `water/c60.txt` is the cage geometry in the format read by the water
   potential; it is not interchangeable with the `c60.txt` at the root.
@@ -208,18 +214,20 @@ dipole-moment value, appended across the sweep.
 
 **Typical sequence to regenerate a full figure**
 
-1. Choose the guest species (rotational constant, mass, cage potential) in
-   `input.txt`.
-2. For each target chain angle γ, set `angle` and run `julia --project=env main.jl`
-   in a dedicated output directory.
-3. For the phase diagram, ensure `Nmu`/`dmu` span the μ_eff range of interest;
-   for the ferro/antiferro comparison, run both `interaction nearest` and
-   `interaction next`.
+1. Choose the guest species: the repository root for LiF, `water/` with
+   `input.txt` (o-D₂O) or `input_pH2O.txt` (p-H₂O) for water.
+2. For each target chain angle γ, copy that code folder into a dedicated run
+   directory, set `angle` in its `input.txt` and run
+   `julia --project=<path to env> main.jl` from inside the run directory.
+3. For the phase diagram, ensure `Nmu`/`dmu` span the μ_eff range of interest.
+   The phase diagram of the paper uses `inter= fourth`; `inter= next` gives the
+   diagram with the next-nearest-neighbor truncation shown in the Supporting
+   Information, and `inter= nearest` the nearest-neighbor comparison.
 4. Collect the resulting text files and plot (net polarization, Binder cumulant,
    entropy, and NN-correlation sign as functions of μ_eff and γ).
 
 > Because output files are opened in append mode and initialized once per run,
-> use a clean working directory (or clear the `*.txt` outputs) for each new
+> use a fresh copy of the code folder (or clear the `*.txt` outputs) for each new
 > (γ, species) combination to avoid mixing sweeps.
 
 ## Citing
